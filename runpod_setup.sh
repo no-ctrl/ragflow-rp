@@ -135,9 +135,9 @@ configure_services() {
 
         # Ensure run directory exists
         mkdir -p /var/run/mysqld
-        chown mysql:mysql /var/run/mysqld
+        # chown mysql:mysql /var/run/mysqld
 
-        mysqld --initialize-insecure --user=mysql --datadir="$DATA_DIR/mysql"
+        mysqld --initialize-insecure --user=root --datadir="$DATA_DIR/mysql"
     fi
 
     # .env
@@ -235,9 +235,9 @@ start_services() {
     # MySQL
     if ! pgrep mysqld > /dev/null; then
         mkdir -p /var/run/mysqld
-        chown mysql:mysql /var/run/mysqld
+        # chown mysql:mysql /var/run/mysqld
 
-        mysqld --user=mysql --datadir="$DATA_DIR/mysql" > "$LOG_DIR/mysql.log" 2>&1 &
+        mysqld --user=root --datadir="$DATA_DIR/mysql" > "$LOG_DIR/mysql.log" 2>&1 &
         log "Waiting for MySQL to start..."
         sleep 10
         mysql -S /var/run/mysqld/mysqld.sock -u root -e "CREATE DATABASE IF NOT EXISTS rag_flow; CREATE USER IF NOT EXISTS 'root'@'%' IDENTIFIED BY 'infini_rag_flow'; GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION; FLUSH PRIVILEGES;" || true
