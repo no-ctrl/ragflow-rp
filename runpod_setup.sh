@@ -244,7 +244,26 @@ EOF
     ln -sf /etc/nginx/sites-available/ragflow /etc/nginx/sites-enabled/ragflow
 }
 
+enforce_runpod_env() {
+    log "Enforcing RunPod environment settings..."
+    # Always enforce these settings for RunPod native to prevent conflicts
+    # This fixes issues where 'source .env' exports incorrect hostnames like 'mysql' or 'es01'
+    # or where DOC_ENGINE might be set to elasticsearch in persistent volumes
+    sed -i 's/DOC_ENGINE=elasticsearch/DOC_ENGINE=infinity/g' "$CONF_DIR/.env"
+    sed -i 's/MYSQL_HOST=mysql/MYSQL_HOST=127.0.0.1/g' "$CONF_DIR/.env"
+    sed -i 's/ES_HOST=es01/ES_HOST=127.0.0.1/g' "$CONF_DIR/.env"
+    sed -i 's/MINIO_HOST=minio/MINIO_HOST=127.0.0.1/g' "$CONF_DIR/.env"
+    sed -i 's/REDIS_HOST=redis/REDIS_HOST=127.0.0.1/g' "$CONF_DIR/.env"
+    sed -i 's/INFINITY_HOST=infinity/INFINITY_HOST=127.0.0.1/g' "$CONF_DIR/.env"
+    sed -i 's/OCEANBASE_HOST=oceanbase/OCEANBASE_HOST=127.0.0.1/g' "$CONF_DIR/.env"
+}
+
 start_services() {
+    # Enforce env settings before loading them
+    if [ -f "$CONF_DIR/.env" ]; then
+        enforce_runpod_env
+    fi
+
     log "Starting services..."
 
     # Load env vars
