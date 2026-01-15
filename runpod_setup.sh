@@ -133,6 +133,16 @@ configure_services() {
         service mysql stop || true
         rm -rf "$DATA_DIR/mysql/*"
 
+        # Fix for RunPod: Modify MySQL config to allow running as root (overriding 'user = mysql')
+        # Find the file containing 'user = mysql' and change it to 'user = root'
+        if [ -d "/etc/mysql" ]; then
+            MYSQL_CONF=$(grep -l "user[[:space:]]*=[[:space:]]*mysql" -r /etc/mysql | head -n 1 || true)
+            if [ -n "$MYSQL_CONF" ]; then
+                log "Updating MySQL config at $MYSQL_CONF to run as root..."
+                sed -i 's/user[[:space:]]*=[[:space:]]*mysql/user = root/g' "$MYSQL_CONF"
+            fi
+        fi
+
         # Ensure run directory exists
         mkdir -p /var/run/mysqld
         # chown mysql:mysql /var/run/mysqld
