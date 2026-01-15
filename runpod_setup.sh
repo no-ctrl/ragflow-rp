@@ -156,13 +156,13 @@ configure_services() {
     fi
     # Always enforce these settings for RunPod native to prevent conflicts
     # This fixes issues where 'source .env' exports incorrect hostnames like 'mysql' or 'es01'
-    sed -i 's/DOC_ENGINE=elasticsearch/DOC_ENGINE=infinity/g' "$CONF_DIR/.env"
-    sed -i 's/MYSQL_HOST=mysql/MYSQL_HOST=127.0.0.1/g' "$CONF_DIR/.env"
-    sed -i 's/ES_HOST=es01/ES_HOST=127.0.0.1/g' "$CONF_DIR/.env"
-    sed -i 's/MINIO_HOST=minio/MINIO_HOST=127.0.0.1/g' "$CONF_DIR/.env"
-    sed -i 's/REDIS_HOST=redis/REDIS_HOST=127.0.0.1/g' "$CONF_DIR/.env"
-    sed -i 's/INFINITY_HOST=infinity/INFINITY_HOST=127.0.0.1/g' "$CONF_DIR/.env"
-    sed -i 's/OCEANBASE_HOST=oceanbase/OCEANBASE_HOST=127.0.0.1/g' "$CONF_DIR/.env"
+    sed -i 's/^DOC_ENGINE=.*/DOC_ENGINE=infinity/g' "$CONF_DIR/.env"
+    sed -i 's/^MYSQL_HOST=.*/MYSQL_HOST=127.0.0.1/g' "$CONF_DIR/.env"
+    sed -i 's/^ES_HOST=.*/ES_HOST=127.0.0.1/g' "$CONF_DIR/.env"
+    sed -i 's/^MINIO_HOST=.*/MINIO_HOST=127.0.0.1/g' "$CONF_DIR/.env"
+    sed -i 's/^REDIS_HOST=.*/REDIS_HOST=127.0.0.1/g' "$CONF_DIR/.env"
+    sed -i 's/^INFINITY_HOST=.*/INFINITY_HOST=127.0.0.1/g' "$CONF_DIR/.env"
+    sed -i 's/^OCEANBASE_HOST=.*/OCEANBASE_HOST=127.0.0.1/g' "$CONF_DIR/.env"
 
     # service_conf.yaml
     # Remove incorrect config if it contains localhost:1200 (which is often a default that causes issues)
@@ -255,13 +255,13 @@ enforce_runpod_env() {
     # Always enforce these settings for RunPod native to prevent conflicts
     # This fixes issues where 'source .env' exports incorrect hostnames like 'mysql' or 'es01'
     # or where DOC_ENGINE might be set to elasticsearch in persistent volumes
-    sed -i 's/DOC_ENGINE=elasticsearch/DOC_ENGINE=infinity/g' "$CONF_DIR/.env"
-    sed -i 's/MYSQL_HOST=mysql/MYSQL_HOST=127.0.0.1/g' "$CONF_DIR/.env"
-    sed -i 's/ES_HOST=es01/ES_HOST=127.0.0.1/g' "$CONF_DIR/.env"
-    sed -i 's/MINIO_HOST=minio/MINIO_HOST=127.0.0.1/g' "$CONF_DIR/.env"
-    sed -i 's/REDIS_HOST=redis/REDIS_HOST=127.0.0.1/g' "$CONF_DIR/.env"
-    sed -i 's/INFINITY_HOST=infinity/INFINITY_HOST=127.0.0.1/g' "$CONF_DIR/.env"
-    sed -i 's/OCEANBASE_HOST=oceanbase/OCEANBASE_HOST=127.0.0.1/g' "$CONF_DIR/.env"
+    sed -i 's/^DOC_ENGINE=.*/DOC_ENGINE=infinity/g' "$CONF_DIR/.env"
+    sed -i 's/^MYSQL_HOST=.*/MYSQL_HOST=127.0.0.1/g' "$CONF_DIR/.env"
+    sed -i 's/^ES_HOST=.*/ES_HOST=127.0.0.1/g' "$CONF_DIR/.env"
+    sed -i 's/^MINIO_HOST=.*/MINIO_HOST=127.0.0.1/g' "$CONF_DIR/.env"
+    sed -i 's/^REDIS_HOST=.*/REDIS_HOST=127.0.0.1/g' "$CONF_DIR/.env"
+    sed -i 's/^INFINITY_HOST=.*/INFINITY_HOST=127.0.0.1/g' "$CONF_DIR/.env"
+    sed -i 's/^OCEANBASE_HOST=.*/OCEANBASE_HOST=127.0.0.1/g' "$CONF_DIR/.env"
 }
 
 start_services() {
