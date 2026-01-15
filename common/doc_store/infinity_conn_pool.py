@@ -67,6 +67,7 @@ class InfinityConnectionPool:
             logging.error(f"Failed to parse Infinity URI '{infinity_uri}': {e}. Using default 127.0.0.1:23817")
             self.infinity_uri = infinity.common.NetworkAddress("127.0.0.1", 23817)
 
+        self.conn_pool = None
         for _ in range(24):
             try:
                 conn_pool = ConnectionPool(self.infinity_uri, max_size=4)
