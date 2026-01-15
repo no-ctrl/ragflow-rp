@@ -46,7 +46,7 @@ install_dependencies() {
 
     apt-get update
     # Explicitly install python3.12 and its dev/venv packages
-    apt-get install -y build-essential curl wget git nginx mysql-server redis-server \
+    apt-get install -y build-essential curl wget git nginx mysql-server redis-server netcat-openbsd \
         python3.12 python3.12-dev python3.12-venv python3-pip pkg-config libicu-dev libgdiplus default-jdk \
         libatk-bridge2.0-0 libgtk-4-1 libnss3 xdg-utils libgbm-dev libjemalloc-dev libssl-dev \
         unzip || true
@@ -194,9 +194,9 @@ try:
         return default_val
 
     # Replace variable defaults
-    content = re.sub(r'\$\{([^:}]+):-([^}]+)\}', replace, content)
+    content = re.sub(r'\\\${([^:}]+):-([^}]+)}', replace, content)
     # Replace remaining variables with environment values
-    content = re.sub(r'\$\{([^:}]+)\}', lambda m: os.environ.get(m.group(1), ''), content)
+    content = re.sub(r'\\\${([^:}]+)}', lambda m: os.environ.get(m.group(1), ''), content)
 
     # FIX: Update TEI port to 6380
     content = content.replace("http://127.0.0.1:80", "http://127.0.0.1:6380")
