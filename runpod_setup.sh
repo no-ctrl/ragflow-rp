@@ -153,11 +153,21 @@ configure_services() {
     # .env
     if [ ! -f "$CONF_DIR/.env" ]; then
         cp "$REPO_DIR/docker/.env" "$CONF_DIR/.env"
-        sed -i 's/DOC_ENGINE=elasticsearch/DOC_ENGINE=infinity/g' "$CONF_DIR/.env"
     fi
+    # Always enforce these settings for RunPod native to prevent conflicts
+    # This fixes issues where 'source .env' exports incorrect hostnames like 'mysql' or 'es01'
+    sed -i 's/DOC_ENGINE=elasticsearch/DOC_ENGINE=infinity/g' "$CONF_DIR/.env"
+    sed -i 's/MYSQL_HOST=mysql/MYSQL_HOST=127.0.0.1/g' "$CONF_DIR/.env"
+    sed -i 's/ES_HOST=es01/ES_HOST=127.0.0.1/g' "$CONF_DIR/.env"
+    sed -i 's/MINIO_HOST=minio/MINIO_HOST=127.0.0.1/g' "$CONF_DIR/.env"
+    sed -i 's/REDIS_HOST=redis/REDIS_HOST=127.0.0.1/g' "$CONF_DIR/.env"
+    sed -i 's/INFINITY_HOST=infinity/INFINITY_HOST=127.0.0.1/g' "$CONF_DIR/.env"
+    sed -i 's/OCEANBASE_HOST=oceanbase/OCEANBASE_HOST=127.0.0.1/g' "$CONF_DIR/.env"
 
     # service_conf.yaml
-    if [ ! -f "$CONF_DIR/service_conf.yaml" ]; then
+    # Regenerate if missing OR if it contains unreplaced variables (indicated by ${)
+    if [ ! -f "$CONF_DIR/service_conf.yaml" ] || grep -q "\${" "$CONF_DIR/service_conf.yaml"; then
+        log "Generating service_conf.yaml..."
         # Use python3 from venv or system, assuming standard libs are enough
         /usr/bin/python3 - <<EOF
 import os
@@ -173,7 +183,7 @@ try:
     def replace(match):
         var_name = match.group(1)
         default_val = match.group(2)
-        if var_name in ['MYSQL_HOST', 'MINIO_HOST', 'REDIS_HOST', 'INFINITY_HOST', 'RAGFLOW_HOST', 'TEI_HOST', 'RERANK_HOST']:
+        if var_name in ['MYSQL_HOST', 'MINIO_HOST', 'REDIS_HOST', 'INFINITY_HOST', 'RAGFLOW_HOST', 'TEI_HOST', 'RERANK_HOST', 'ES_HOST', 'OCEANBASE_HOST']:
             return '127.0.0.1'
         return default_val
 
