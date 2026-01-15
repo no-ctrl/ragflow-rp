@@ -165,6 +165,12 @@ configure_services() {
     sed -i 's/OCEANBASE_HOST=oceanbase/OCEANBASE_HOST=127.0.0.1/g' "$CONF_DIR/.env"
 
     # service_conf.yaml
+    # Remove incorrect config if it contains localhost:1200 (which is often a default that causes issues)
+    if [ -f "$CONF_DIR/service_conf.yaml" ] && grep -q "localhost:1200" "$CONF_DIR/service_conf.yaml"; then
+        log "Removing incorrect service_conf.yaml (contains localhost:1200)..."
+        rm -f "$CONF_DIR/service_conf.yaml"
+    fi
+
     # Regenerate if missing OR if it contains unreplaced variables (indicated by ${)
     if [ ! -f "$CONF_DIR/service_conf.yaml" ] || grep -q "\${" "$CONF_DIR/service_conf.yaml"; then
         log "Generating service_conf.yaml..."

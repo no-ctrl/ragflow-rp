@@ -27,6 +27,11 @@ ATTEMPT_TIME = 2
 class ElasticSearchConnectionPool:
 
     def __init__(self):
+        if settings.DOC_ENGINE.lower() != "elasticsearch":
+            logging.info(f"DOC_ENGINE is {settings.DOC_ENGINE}, skipping Elasticsearch connection.")
+            self.es_conn = None
+            return
+
         if hasattr(settings, "ES"):
             self.ES_CONFIG = settings.ES
         else:

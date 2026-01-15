@@ -25,10 +25,6 @@ from common.misc_utils import pip_install_torch
 from common.constants import SVR_QUEUE_NAME, Storage
 
 import rag.utils
-import rag.utils.es_conn
-import rag.utils.infinity_conn
-import rag.utils.ob_conn
-import rag.utils.opensearch_conn
 from rag.utils.azure_sas_conn import RAGFlowAzureSasBlob
 from rag.utils.azure_spn_conn import RAGFlowAzureSpnBlob
 from rag.utils.gcs_conn import RAGFlowGCS
@@ -38,9 +34,6 @@ from rag.utils.s3_conn import RAGFlowS3
 from rag.utils.oss_conn import RAGFlowOSS
 
 from rag.nlp import search
-
-import memory.utils.es_conn as memory_es_conn
-import memory.utils.infinity_conn as memory_infinity_conn
 
 LLM = None
 LLM_FACTORY = None
@@ -246,15 +239,19 @@ def init_settings():
     DOC_ENGINE_INFINITY = (DOC_ENGINE.lower() == "infinity")
     lower_case_doc_engine = DOC_ENGINE.lower()
     if lower_case_doc_engine == "elasticsearch":
+        import rag.utils.es_conn
         ES = get_base_config("es", {})
         docStoreConn = rag.utils.es_conn.ESConnection()
     elif lower_case_doc_engine == "infinity":
+        import rag.utils.infinity_conn
         INFINITY = get_base_config("infinity", {"uri": "infinity:23817"})
         docStoreConn = rag.utils.infinity_conn.InfinityConnection()
     elif lower_case_doc_engine == "opensearch":
+        import rag.utils.opensearch_conn
         OS = get_base_config("os", {})
         docStoreConn = rag.utils.opensearch_conn.OSConnection()
     elif lower_case_doc_engine == "oceanbase":
+        import rag.utils.ob_conn
         OB = get_base_config("oceanbase", {})
         docStoreConn = rag.utils.ob_conn.OBConnection()
     else:
@@ -263,9 +260,11 @@ def init_settings():
     global msgStoreConn
     # use the same engine for message store
     if DOC_ENGINE == "elasticsearch":
+        import memory.utils.es_conn as memory_es_conn
         ES = get_base_config("es", {})
         msgStoreConn = memory_es_conn.ESConnection()
     elif DOC_ENGINE == "infinity":
+        import memory.utils.infinity_conn as memory_infinity_conn
         INFINITY = get_base_config("infinity", {"uri": "infinity:23817"})
         msgStoreConn = memory_infinity_conn.InfinityConnection()
 
