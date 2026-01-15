@@ -34,9 +34,38 @@ class InfinityConnectionPool:
             self.INFINITY_CONFIG = settings.get_base_config("infinity", {"uri": "infinity:23817"})
 
         infinity_uri = self.INFINITY_CONFIG["uri"]
-        if ":" in infinity_uri:
-            host, port = infinity_uri.split(":")
-            self.infinity_uri = infinity.common.NetworkAddress(host, int(port))
+
+        # Robust URI parsing
+        host = "127.0.0.1"
+        port = 23817
+
+        try:
+            # Strip protocol if present
+            clean_uri = infinity_uri
+            if "://" in clean_uri:
+                clean_uri = clean_uri.split("://")[-1]
+
+            # Remove any trailing slashes
+            clean_uri = clean_uri.rstrip("/")
+
+            if ":" in clean_uri:
+                parts = clean_uri.split(":")
+                if len(parts) == 2:
+                    host, port_str = parts
+                    port = int(port_str)
+                else:
+                    logging.warning(f"Unexpected Infinity URI format: {infinity_uri}. Trying to parse anyway.")
+                    # Fallback: assume last part is port, second to last is host
+                    port = int(parts[-1])
+                    host = parts[-2]
+            else:
+                # If no port specified, assume host only (unlikely but possible)
+                host = clean_uri
+
+            self.infinity_uri = infinity.common.NetworkAddress(host, port)
+        except Exception as e:
+            logging.error(f"Failed to parse Infinity URI '{infinity_uri}': {e}. Using default 127.0.0.1:23817")
+            self.infinity_uri = infinity.common.NetworkAddress("127.0.0.1", 23817)
 
         for _ in range(24):
             try:

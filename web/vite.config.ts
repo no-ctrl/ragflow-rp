@@ -99,14 +99,10 @@ export default defineConfig(({ mode, command }) => {
       assetsDir: 'assets',
       assetsInlineLimit: 4096,
       experimentalMinChunkSize: 30 * 1024,
-      chunkSizeWarningLimit: 1000,
+      chunkSizeWarningLimit: 1500,
       rollupOptions: {
         output: {
           manualChunks(id) {
-            // if (id.includes('src/components')) {
-            //   return 'components';
-            // }
-
             if (id.includes('node_modules')) {
               if (id.includes('node_modules/d3')) {
                 return 'd3';
@@ -117,6 +113,16 @@ export default defineConfig(({ mode, command }) => {
               if (id.includes('node_modules/@antv')) {
                 return 'antv';
               }
+              if (id.includes('node_modules/pdfjs-dist')) {
+                return 'pdfjs-dist';
+              }
+              if (id.includes('node_modules/monaco-editor')) {
+                 return 'monaco-editor';
+              }
+              if (id.includes('node_modules/echarts')) {
+                 return 'echarts';
+              }
+
               const name = id
                 .toString()
                 .split('node_modules/')[1]
