@@ -4,7 +4,8 @@ set -e
 # Configuration
 WORKSPACE_DIR="/workspace/ragflow"
 REPO_DIR="$(pwd)"
-VENV_DIR="$WORKSPACE_DIR/venv"
+# Use /root for venv to save workspace space as requested
+VENV_DIR="/root/ragflow_venv"
 DATA_DIR="$WORKSPACE_DIR/data"
 LOG_DIR="$WORKSPACE_DIR/logs"
 CONF_DIR="$WORKSPACE_DIR/conf"
@@ -16,6 +17,7 @@ export PATH="$BIN_DIR:$VENV_DIR/bin:$PATH"
 export PYTHONPATH="$REPO_DIR"
 # Append to LD_LIBRARY_PATH instead of overwrite
 export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/:$LD_LIBRARY_PATH
+export DEBIAN_FRONTEND=noninteractive
 
 # Functions
 log() {
@@ -33,16 +35,25 @@ setup_directories() {
 
 install_dependencies() {
     log "Installing system dependencies..."
-    apt-get update
-    # Explicitly install python3.12 if available, or just python3
-    apt-get install -y build-essential curl wget git nginx mysql-server redis-server \
-        python3-dev python3-pip pkg-config libicu-dev libgdiplus default-jdk \
-        libatk-bridge2.0-0 libgtk-4-1 libnss3 xdg-utils libgbm-dev libjemalloc-dev libssl-dev \
-        unzip
 
-    # Try to install python3.12 specifically if possible (common in newer ubuntu or deadsnakes PPA),
-    # but rely on default python3 if 3.12 isn't strictly available in default repos without PPA.
-    # RAGFlow requires >=3.10.
+    # Add deadsnakes PPA if not present (to get Python 3.12 on older Ubuntu)
+    if ! grep -q "deadsnakes/ppa" /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null; then
+        log "Adding deadsnakes PPA..."
+        apt-get update
+        apt-get install -y software-properties-common
+        add-apt-repository -y ppa:deadsnakes/ppa
+    fi
+
+    apt-get update
+    # Explicitly install python3.12 and its dev/venv packages
+    apt-get install -y build-essential curl wget git nginx mysql-server redis-server \
+        python3.12 python3.12-dev python3.12-venv python3-pip pkg-config libicu-dev libgdiplus default-jdk \
+        libatk-bridge2.0-0 libgtk-4-1 libnss3 xdg-utils libgbm-dev libjemalloc-dev libssl-dev \
+        unzip || true
+
+    # Note: '|| true' above is to prevent the script from failing if services (mysql/redis/nginx)
+    # fail to start immediately after installation due to policy-rc.d in docker/runpod environment.
+    # We configure and start them manually later.
 
     # Install Node.js
     if ! command -v node &> /dev/null; then
@@ -80,8 +91,10 @@ install_dependencies() {
 setup_python() {
     log "Setting up Python environment..."
     if [ ! -d "$VENV_DIR" ]; then
-        # Use default python3
-        uv venv "$VENV_DIR"
+        # Force use of python3.12 to match pyproject.toml requirements
+        # uv should find python3.12 from the path if installed
+        log "Creating virtual environment with Python 3.12..."
+        uv venv "$VENV_DIR" --python 3.12
     fi
 
     # Activate venv
@@ -96,6 +109,7 @@ setup_python() {
 
     # Run download_deps
     log "Downloading models and dependencies..."
+    # Ensure we use the venv python
     python3 download_deps.py
 }
 
@@ -134,7 +148,8 @@ configure_services() {
 
     # service_conf.yaml
     if [ ! -f "$CONF_DIR/service_conf.yaml" ]; then
-        python3 - <<EOF
+        # Use python3 from venv or system, assuming standard libs are enough
+        /usr/bin/python3 - <<EOF
 import os
 import re
 
@@ -158,9 +173,6 @@ try:
     content = re.sub(r'\$\{([^:}]+)\}', lambda m: os.environ.get(m.group(1), ''), content)
 
     # FIX: Update TEI port to 6380
-    # The template has: base_url: 'http://${TEI_HOST}:80'
-    # After substitution it becomes: base_url: 'http://127.0.0.1:80'
-    # We need to change :80 to :6380 for TEI configuration
     content = content.replace("http://127.0.0.1:80", "http://127.0.0.1:6380")
 
     with open(output_path, 'w') as f:
@@ -283,13 +295,9 @@ EOF
     fi
 
     # Infinity Embedding Server (TEI replacement)
-    # Uses infinity-emb to serve compatible API on port 6380
     if ! pgrep -f "infinity_emb" > /dev/null; then
         log "Starting Infinity Embedding Server..."
-        # Use TEI_MODEL from env, default to BAAI/bge-m3 if not set or invalid
-        # RAGFlow .env default is Qwen/Qwen3-Embedding-0.6B
         MODEL_ID="${TEI_MODEL:-Qwen/Qwen3-Embedding-0.6B}"
-
         # Start server
         nohup infinity_emb v2 --port 6380 --model-id "$MODEL_ID" > "$LOG_DIR/infinity_emb.log" 2>&1 &
     fi
