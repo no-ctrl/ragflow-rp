@@ -99,7 +99,7 @@ export default defineConfig(({ mode, command }) => {
       assetsDir: 'assets',
       assetsInlineLimit: 4096,
       experimentalMinChunkSize: 30 * 1024,
-      chunkSizeWarningLimit: 1500,
+      chunkSizeWarningLimit: 2000,
       rollupOptions: {
         output: {
           manualChunks(id) {
