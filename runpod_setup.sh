@@ -338,6 +338,7 @@ start_services() {
 
     # Infinity
     if ! pgrep infinity > /dev/null; then
+        mkdir -p "$LOG_DIR/infinity"
         cat > "$CONF_DIR/infinity_conf.toml" <<EOF
 [general]
 cpu_limit = 4
@@ -374,6 +375,16 @@ data_dir = "$DATA_DIR/infinity/data"
 default_row_size = 8192
 EOF
         infinity -f "$CONF_DIR/infinity_conf.toml" > "$LOG_DIR/infinity_startup.log" 2>&1 &
+
+        log "Waiting for Infinity to start..."
+        timeout=30
+        while ! nc -z 127.0.0.1 23817; do
+          sleep 1
+          timeout=$((timeout-1))
+          if [ $timeout -le 0 ]; then log "Infinity failed to start (timeout)"; break; fi
+        done
+        # Give it a few more seconds to be fully ready to accept thrift connections
+        sleep 5
     fi
 
     # Infinity Embedding Server (TEI replacement)
@@ -390,6 +401,9 @@ EOF
     # RAGFlow
     log "Starting RAGFlow Server..."
     nohup python3 api/ragflow_server.py > "$LOG_DIR/ragflow_server.log" 2>&1 &
+
+    log "Starting Admin Server..."
+    nohup python3 admin/server/admin_server.py > "$LOG_DIR/admin_server.log" 2>&1 &
 
     log "Starting Task Executor..."
     HOST_ID=$(hostname)
