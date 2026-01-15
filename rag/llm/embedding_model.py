@@ -16,11 +16,15 @@
 import json
 import os
 import threading
+import warnings
 from abc import ABC
 from urllib.parse import urljoin
 
 import dashscope
 import google.generativeai as genai
+# Suppress Google Generative AI FutureWarning
+warnings.filterwarnings("ignore", category=FutureWarning, module="google.generativeai")
+
 import numpy as np
 import requests
 from ollama import Client

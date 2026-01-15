@@ -284,8 +284,45 @@ start_services() {
 
         mysqld --user=root --datadir="$DATA_DIR/mysql" > "$LOG_DIR/mysql.log" 2>&1 &
         log "Waiting for MySQL to start..."
-        sleep 10
-        mysql -S /var/run/mysqld/mysqld.sock -u root -e "CREATE DATABASE IF NOT EXISTS rag_flow; CREATE USER IF NOT EXISTS 'root'@'%' IDENTIFIED BY 'infini_rag_flow'; GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION; FLUSH PRIVILEGES;" || true
+
+        # Wait for port 3306
+        timeout=30
+        while ! nc -z 127.0.0.1 3306; do
+          sleep 1
+          timeout=$((timeout-1))
+          if [ $timeout -le 0 ]; then log "MySQL failed to start (timeout)"; break; fi
+        done
+
+        # Try connecting with password
+        if mysql -S /var/run/mysqld/mysqld.sock -u root -pinfini_rag_flow -e "SELECT 1" >/dev/null 2>&1; then
+             log "MySQL password confirmed."
+        else
+             # Try connecting without password
+             if mysql -S /var/run/mysqld/mysqld.sock -u root -e "SELECT 1" >/dev/null 2>&1; then
+                 log "MySQL has no password. Setting it..."
+                 mysql -S /var/run/mysqld/mysqld.sock -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'infini_rag_flow'; FLUSH PRIVILEGES;"
+             else
+                 log "MySQL password unknown. Resetting..."
+                 killall mysqld
+                 # wait for kill
+                 sleep 5
+                 mysqld --user=root --datadir="$DATA_DIR/mysql" --skip-grant-tables > "$LOG_DIR/mysql_reset.log" 2>&1 &
+                 sleep 10
+                 mysql -S /var/run/mysqld/mysqld.sock -u root -e "FLUSH PRIVILEGES; ALTER USER 'root'@'localhost' IDENTIFIED BY 'infini_rag_flow'; FLUSH PRIVILEGES;"
+                 killall mysqld
+                 sleep 5
+                 mysqld --user=root --datadir="$DATA_DIR/mysql" > "$LOG_DIR/mysql.log" 2>&1 &
+                 # wait again
+                 timeout=30
+                 while ! nc -z 127.0.0.1 3306; do
+                   sleep 1
+                   timeout=$((timeout-1))
+                   if [ $timeout -le 0 ]; then log "MySQL failed to restart (timeout)"; break; fi
+                 done
+             fi
+        fi
+
+        mysql -S /var/run/mysqld/mysqld.sock -u root -pinfini_rag_flow -e "CREATE DATABASE IF NOT EXISTS rag_flow; CREATE USER IF NOT EXISTS 'root'@'%' IDENTIFIED BY 'infini_rag_flow'; GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION; FLUSH PRIVILEGES;" || true
         mysql -S /var/run/mysqld/mysqld.sock -u root -pinfini_rag_flow rag_flow < "$REPO_DIR/docker/init.sql" || true
     fi
 
